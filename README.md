@@ -21,3 +21,10 @@ assert goodDivision.isOk();
 assert badDivision.hasError();
 assert badDivision.getError().getCause() instanceof ArithmeticException;
 ```
+
+You can also do fun stuff like:
+```java
+String evaluation = Result.fromFunction(()->divide(4, 0))
+          .map(n-> "Your Result is: " + n)
+          .orElse("Invalid");
+```
