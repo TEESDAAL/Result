@@ -10,7 +10,7 @@ Result<String> anotherResult = Result.of("This is cool:)");
 ```
 You can also instantiate the error variant by passing a supplier of an error.
 ```java
-Result<Integer> evilResult = Result.of(()-> new IllegalArgumentException(s));
+Result<Integer> evilResult = Result.of(()-> new IllegalArgumentException("An evil error"));
 ```
 And for some reason if you find a function that unwisely throws instead of returning a result. You can (partiallly) address these crimes using the `fromFunction` passing in a supplier that calls the method to capture the exception, and return a result.
 
