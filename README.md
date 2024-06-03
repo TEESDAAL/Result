@@ -12,7 +12,7 @@ You can also instantiate the error variant by passing a supplier of an error.
 ```java
 Result<Integer> evilResult = Result.of(()-> new IllegalArgumentException(s));
 ```
-And for some reason if you find a function that unwisely throws instead of returning a result. You can using the `fromFunction` passing in a supplier that calls the method to convert the exception it would throw into a result.
+And for some reason if you find a function that unwisely throws instead of returning a result. You can (partiallly) address these crimes using the `fromFunction` passing in a supplier that calls the method to convert the exception it would throw into a result.
 
 ```java
 Result<Integer> goodDivision = Result.fromFunction(()->divide(2, 4));
