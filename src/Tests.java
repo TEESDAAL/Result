@@ -132,8 +132,19 @@ public class Tests {
 
             Result<String> err = Result.of(() -> new IllegalArgumentException(s));
             assertEquals(err.toOption(), Optional.empty());
-
         }
+    }
+
+    @Test
+    void example() {
+        Result<Integer> goodDivision = Result.fromFunction(()->divide(2, 4));
+        Result<Integer> badDivision = Result.fromFunction(()->divide(4, 0));
+        assert Result.fromFunction(()->divide(4, 0))
+                .map(n-> "Your Result is: " + n)
+                .orElse("Invalid").equals("Invalid");
+        assert goodDivision.isOk();
+        assert badDivision.hasError();
+        assert badDivision.getError().getCause() instanceof ArithmeticException;
     }
 
     Integer throwsAssertionError(String s) {
@@ -144,7 +155,9 @@ public class Tests {
     void voidThrowsAssertionError(String s) {
         assert false: s;
     }
-
+    Integer divide(int a, int b) {
+        return a/b;
+    }
     String returnsString(String s) {
         return s;
     }
