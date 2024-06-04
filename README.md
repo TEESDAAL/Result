@@ -19,7 +19,7 @@ Result<Integer> goodDivision = Result.fromFunction(()->divide(2, 4));
 Result<Integer> badDivision = Result.fromFunction(()->divide(4, 0));
 assert goodDivision.isOk();
 assert badDivision.hasError();
-assert badDivision.getError().getCause() instanceof ArithmeticException;
+assert badDivision.getError() instanceof ArithmeticException;
 ```
 
 You can also do fun stuff like:

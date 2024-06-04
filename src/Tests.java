@@ -144,7 +144,7 @@ public class Tests {
                 .orElse("Invalid").equals("Invalid");
         assert goodDivision.isOk();
         assert badDivision.hasError();
-        assert badDivision.getError().getCause() instanceof ArithmeticException;
+        assert badDivision.getError() instanceof ArithmeticException;
     }
 
     Integer throwsAssertionError(String s) {

@@ -55,6 +55,7 @@ public final class Result<T> {
      * @param <T>
      * @return Convert the result of a function that could throw into a result.
      *         Which contains either the value or the error
+     *         (Immediately runs the provided function)
      */
     public static <T> Result<T> fromFunction(Supplier<T> function) {
         Objects.requireNonNull(function);
@@ -62,16 +63,7 @@ public final class Result<T> {
             return new Result<>(function.get());
         } catch (Throwable e) {
             return new Result<>(() -> e);
-            /**try {
-                Constructor<? extends Throwable> errorConstructor = RuntimeException.class.getConstructor(Throwable.class);
-                Throwable initialisedError =  errorConstructor.newInstance(e);
-                return new Result<>(() -> initialisedError);
-            } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
-                     IllegalAccessException ex) {
-                throw new RuntimeException(ex);
-            }*/
         }
-
     }
 
     /**
