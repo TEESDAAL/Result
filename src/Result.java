@@ -61,14 +61,15 @@ public final class Result<T> {
         try {
             return new Result<>(function.get());
         } catch (Throwable e) {
-            try {
+            return new Result<>(() -> e);
+            /**try {
                 Constructor<? extends Throwable> errorConstructor = RuntimeException.class.getConstructor(Throwable.class);
                 Throwable initialisedError =  errorConstructor.newInstance(e);
                 return new Result<>(() -> initialisedError);
             } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
                      IllegalAccessException ex) {
                 throw new RuntimeException(ex);
-            }
+            }*/
         }
 
     }
