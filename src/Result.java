@@ -188,6 +188,24 @@ public final class Result<T> {
         if (isOk()) {return ok;}
         return other;
     }
+    public Result<T> transformErrorType(Function<Throwable, T> mapper, Class<? extends Throwable> errorType) {
+        if (isOk()) {
+            return new Result<>(ok);
+        }
+        if (error.getClass() == errorType) {
+            return new Result<>(mapper.apply(error.get()));
+        }
+        return this;
+    }
+
+    public <U> U match(Function<T, U> onOk, Function<? extends Throwable, U> onDefault, Function<? extends Throwable, U>... onErrors) {
+        if (isOk()) {
+            return onOk.apply(this.ok);
+        }
+
+
+    }
+
 
 
     public T orElseGet(Supplier<? extends T> supplier) {
