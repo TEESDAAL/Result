@@ -219,14 +219,8 @@ public final class Result<T> {
                 throw new IllegalStateException("Should be impossible");
             } catch (ClassCastException | IllegalArgumentException ignored) {}
         }
-        return onDefault.apply(this.error.get());
-        // r.match(
-        //  v ->  {},
-        //  AssertionError e -> {..}
-        //  RuntimeException e -> {..}
-        // )
 
-
+        return defaultError.apply(this.error.get());
     }
 
 

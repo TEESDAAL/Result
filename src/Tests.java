@@ -152,14 +152,15 @@ public class Tests {
     void matchTests() {
         Result<Integer> r0 = Result.of(1);
         Result<Integer> r1 = Result.of(IllegalArgumentException::new);
-        Result<Integer> r2 = Result.of(Error::new);
-        Result<Integer> r3 = Result.of(AssertionError::new);
+        Result<Integer> r2 = Result.of(AssertionError::new);
+        Result<Integer> r3 = Result.of(Error::new);
+
         for (int i = 0; i < 4; i++) {
             int res = List.of(r0, r1, r2, r3).get(i).match(
                     x -> 0,
-                    e -> 2,
+                    e -> 3,  // Match arm that gets run if below aren't matched
                     (IllegalArgumentException e) -> 1,
-                    (AssertionError e) -> 3
+                    (AssertionError e) -> 2
             );
             assert res == i;
         }
