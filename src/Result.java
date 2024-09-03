@@ -60,9 +60,9 @@ public final class Result<T> {
     public static <T> Result<T> fromFunction(Supplier<T> function) {
         Objects.requireNonNull(function);
         try {
-            return new Result<>(function.get());
+            return Result.of(function.get());
         } catch (Throwable e) {
-            return new Result<>(() -> e);
+            return Result.of(() -> e);
         }
     }
 
@@ -198,13 +198,37 @@ public final class Result<T> {
         return this;
     }
 
-    public <U> U match(Function<T, U> onOk, Function<? extends Throwable, U> onDefault, Function<? extends Throwable, U>... onErrors) {
+    /**
+     * A match style statement for the result type, to allow matching over multiple errors
+     * @param onOk The match arm for okay results
+     * @param defaultError The match arm that gets run if the error doesn't match any of the below match arms
+     * @param onErrors Specific match arms for certain - order of arguments matters! Can be confusing with subtyping relations on errors
+     * @return a U given by the match arms
+     * @param <U> the return type
+     */
+    @SuppressWarnings("unchecked")
+    @SafeVarargs
+    public final <U> U match(Function<T, U> onOk, Function<Throwable, U> defaultError, Function<? extends Throwable, U>... onErrors) {
         if (isOk()) {
             return onOk.apply(this.ok);
         }
+        for (Function<? extends Throwable, U> onErr : onErrors) {
+            try {
+                return (U) Function.class.getMethod("apply", Object.class).invoke(onErr, error.get());
+            } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+                throw new IllegalStateException("Should be impossible");
+            } catch (ClassCastException | IllegalArgumentException ignored) {}
+        }
+        return onDefault.apply(this.error.get());
+        // r.match(
+        //  v ->  {},
+        //  AssertionError e -> {..}
+        //  RuntimeException e -> {..}
+        // )
 
 
     }
+
 
 
 

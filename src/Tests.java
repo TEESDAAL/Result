@@ -3,6 +3,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicReference;
@@ -145,6 +146,23 @@ public class Tests {
         assert goodDivision.isOk();
         assert badDivision.hasError();
         assert badDivision.getError() instanceof ArithmeticException;
+    }
+
+    @Test
+    void matchTests() {
+        Result<Integer> r0 = Result.of(1);
+        Result<Integer> r1 = Result.of(IllegalArgumentException::new);
+        Result<Integer> r2 = Result.of(Error::new);
+        Result<Integer> r3 = Result.of(AssertionError::new);
+        for (int i = 0; i < 4; i++) {
+            int res = List.of(r0, r1, r2, r3).get(i).match(
+                    x -> 0,
+                    e -> 2,
+                    (IllegalArgumentException e) -> 1,
+                    (AssertionError e) -> 3
+            );
+            assert res == i;
+        }
     }
 
     Integer throwsAssertionError(String s) {
