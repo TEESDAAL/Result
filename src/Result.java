@@ -1,63 +1,31 @@
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Supplier;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
-public final class Result<T> {
-    public final static record EMPTY() {}
-    /**
-     * If non-null, the value; if null, indicates no value is present
-     */
-    private final T ok;
-    Supplier<? extends Throwable> error;
-
-
-    /**
-     * @param ok The okay value of the function.
-     */
-    private Result(T ok) {
-        Objects.requireNonNull(ok);
-        this.ok = ok;
-        this.error = null;
-    }
+/**
+ * A result type containing either a value of type T or an error.
+ *
+ * @param <T> The type of the value.
+ *
+ * @author Alan Teesdale
+ */
+public sealed interface Result<T> permits Err, Ok {
 
     /**
-     * @param error A supplier of the error that this encompasses.
-     */
-    private Result(Supplier<? extends Throwable> error) {
-        Objects.requireNonNull(error);
-        this.ok = null;
-        this.error = error;
-    }
-
-    /**
-     * @param ok The value the result should hold
-     * @param <T> The type of the value
-     * @return the ok result with a given value
-     */
-    public static <T> Result<T> of(T ok) {return new Result<>(Objects.requireNonNull(ok));
-    }
-
-    /**
-     * @param error A supplier of an error - the invalid result
-     * @param <T> The type of the result
-     * @return The error result with a given supplier
-     */
-    public static <T> Result<T> of(Supplier<? extends Throwable> error) {
-        return new Result<>(Objects.requireNonNull(error));
-    }
-
-    /**
-     * @param function
-     * @param <T>
+     * Convert a method into a result.
+     *
+     * @param function The function to run.
+     * @param <T> The return type of the function.
+     *
      * @return Convert the result of a function that could throw into a result.
-     *         Which contains either the value or the error
-     *         (Immediately runs the provided function)
+     *     Which contains either the value or the error.
+     *     (Immediately runs the provided function)
      */
-    public static <T> Result<T> fromFunction(Supplier<T> function) {
+    static <T> Result<T> fromFunction(FallibleSupplier<T> function) {
         Objects.requireNonNull(function);
         try {
             return Result.of(function.get());
@@ -67,201 +35,235 @@ public final class Result<T> {
     }
 
     /**
-     * @param runnable
+     * Convert the runnable into a result.
+     *
+     * @param runnable The runnable that gets converted into a result.
      * @return Convert the result of the runnable to the empty result, or an error if one occurred.
      */
-    public static Result<EMPTY> fromFunction(Runnable runnable) {
-        return fromFunction(()-> {
+    static Result<Void> fromFunction(FallibleRunnable runnable) {
+        Objects.requireNonNull(runnable);
+        try {
             runnable.run();
-            return new EMPTY();
-        });
+            // needed to bypass the null checks from result.of
+            return new Ok<>(null);
+        } catch (Throwable e) {
+            return Result.of(() -> e);
+        }
     }
 
+    /**
+     * Create an Ok result holding the value.
+     *
+     * @param value The value the result should hold.
+     * @param <T>   The type of the value.
+     * @return the ok result with a given value.
+     */
+    static <T> Result<T> of(T value) {
+        return new Ok<>(Objects.requireNonNull(value));
+    }
 
     /**
-     * @return The value if it exists, or
+     * Create an error variant of the result.
+     *
+     * @param error A supplier of an error - the invalid result.
+     * @param <T> The type of the result.
+     * @return The error result with a given supplier.
+     */
+    static <T> Result<T> of(Supplier<? extends Throwable> error) {
+        Objects.requireNonNull(error);
+        return new Err<>(error);
+    }
+
+    /**
+     * Get the value out of the result, throws the error of the result if of the Err variant.
+     * Wraps the Error in a runtime exception.
+     *
+     * @return The value if it exists or,
+     *
      * @throws RuntimeException if the value doesn't exist.
      */
-    public T get() throws RuntimeException {
-        if (ok == null) {
-            throw new RuntimeException(error.get());
-        }
-        return ok;
-    }
+    T get() throws RuntimeException;
 
     /**
-     * @return The error produced by the supplier,
-     * throws a null pointer exception if the result isOk
+     * Get the Error if of the Err variant.
+     *
+     * @return The error that this result holds
+     *
+     * @throws NoSuchElementException if the result has no error - if it is the Ok variant.
      */
-    public Throwable getError() throws NullPointerException {
-        Objects.requireNonNull(error, "Result is not the error variant");
-        return error.get();
-    }
-
+    Throwable getError() throws NoSuchElementException;
 
     /**
+     * Returns if the result is of the Ok var.
+     *
      * @return true if the result is okay, that is if it is not the err variant.
      */
-    public boolean isOk() {
-        assert !Objects.equals(ok, error);
-        return ok != null;
-    }
+    boolean isOk();
 
 
     /**
+     * Returns if the result is of the Err variant.
+     *
      * @return true if the result is **not** okay, that is if it is the err variant.
      */
-    public boolean hasError() {
-        assert !Objects.equals(ok, error);
-        return error!=null;
+    default boolean hasError() {
+        return !isOk();
     }
 
     /**
-     * Run a consumer on the value if the result is okay
-     * @param action
+     * Run a consumer on the value if the result is okay.
+     *
+     * @param action the action to run on the result
      */
-    public void ifOk(Consumer<? super T> action) {
-        if (isOk()) {
-            action.accept(ok);
-        }
-    }
+    void ifOk(Consumer<? super T> action);
 
     /**
      * Run a consumer on the value if the result is okay, otherwise run the empty action.
-     * @param action
-     * @param emptyAction
+     *
+     * @param action      the action to run on the result
+     * @param emptyAction the thing to run if there is no result
      */
-    public void ifOkOrElse(Consumer<? super T> action, Runnable emptyAction) {
-        if (isOk()) {
-            action.accept(ok);
-        } else {
-            emptyAction.run();
-        }
-    }
+    void ifOkOrElse(Consumer<? super T> action, Runnable emptyAction);
 
 
     /**
      * Use the mapper to map the value to a different value.
      * Keeps the error if the result is of error type.
-     * @param mapper
-     * @return
-     * @param <U>
+     *
+     * @param mapper map the value of the result to a different one if it exists
+     * @param <U>    the type to map to
+     * @return A result containing the mapped value.
      */
-    public <U> Result<U> map(Function<? super T, ? extends U> mapper) {
-        Objects.requireNonNull(mapper);
-        if (hasError()) {
-            return new Result<>(error);
-        } else {
-            return new Result<>(Objects.requireNonNull(mapper.apply(ok)));
-        }
-    }
+    <U> Result<U> map(Function<? super T, ? extends U> mapper);
+
 
     /**
      * Works similarly to map, but flattens the result down, keeps the current error if one exists.
+     *
+     * @param mapper the function that maps the value to the new result
+     * @param <U>    The new type of the result
+     * @return a new result provided by the mapper given the value of this result
      */
-    public <U> Result<U> flatMap(Function<? super T, ? extends Result<? extends U>> mapper) {
-        Objects.requireNonNull(mapper);
-        if (hasError()) {
-            return new Result<>(error);
-        }
-        Result<U> r = (Result<U>) mapper.apply(ok);
-        return Objects.requireNonNull(r);
-    }
-
-
-    public Result<T> or(Supplier<? extends Result<? extends T>> supplier) {
-        Objects.requireNonNull(supplier);
-        if (isOk()) {
-            return this;
-        }
-        @SuppressWarnings("unchecked")
-        Result<T> r = (Result<T>) supplier.get();
-        return Objects.requireNonNull(r);
-    }
-
-    public Optional<T> toOption() {
-        return Optional.ofNullable(ok);
-    }
-
-
-    public T orElse(T other) {
-        if (isOk()) {return ok;}
-        return other;
-    }
-    public Result<T> transformErrorType(Function<Throwable, T> mapper, Class<? extends Throwable> errorType) {
-        if (isOk()) {
-            return new Result<>(ok);
-        }
-        if (error.getClass() == errorType) {
-            return new Result<>(mapper.apply(error.get()));
-        }
-        return this;
-    }
+    <U> Result<U> flatMap(Function<? super T, ? extends Result<? extends U>> mapper);
 
     /**
-     * A match style statement for the result type, to allow matching over multiple errors
-     * @param onOk The match arm for okay results
-     * @param defaultError The match arm that gets run if the error doesn't match any of the below match arms
-     * @param onErrors Specific match arms for certain - order of arguments matters! Can be confusing with subtyping relations on errors
-     * @return a U given by the match arms
-     * @param <U> the return type
+     * Transform the Error to a different Error type.
+     *
+     * @param mapper A function that takes the error to a different error type.
+     *
+     * @return A result which has the Err variant mapped to a different error.
      */
-    @SuppressWarnings("unchecked")
-    @SafeVarargs
-    public final <U> U match(Function<T, U> onOk, Function<Throwable, U> defaultError, Function<? extends Throwable, U>... onErrors) {
-        if (isOk()) {
-            return onOk.apply(this.ok);
-        }
-        for (Function<? extends Throwable, U> onErr : onErrors) {
-            try {
-                return (U) Function.class.getMethod("apply", Object.class).invoke(onErr, error.get());
-            } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-                throw new IllegalStateException("Should be impossible");
-            } catch (ClassCastException | IllegalArgumentException ignored) {}
-        }
+    Result<T> transformError(Function<? super Throwable, ? extends Throwable> mapper);
 
-        return defaultError.apply(this.error.get());
-    }
+    /**
+     * Transform the Error to a different Error type.
+     *
+     * @param mapper A function that takes the error to a different error type.
+     *
+     * @return A result which has the Err variant mapped to a different error.
+     */
+    <E extends Throwable> Result<T> transformErrorOfType(Class<E> errorClass, Function<E, ? extends Throwable> mapper);
 
+    /**
+     * Map the error variant of a particular error to a value
+     *
+     * @param errorClass The class of the error to map
+     * @param mapper The error mapping function (Err(E) -> Ok(T))
+     * @param <E> The type of error to map.
+     *
+     * @return A result which is unchanged unless it's an Err where the error is an instance of E.
+     */
+    <E extends Throwable> Result<T> mapErrorOfType(Class<E> errorClass, Function<E, T> mapper);
 
+    /**
+     * Map the error variant of a particular error to a value
+     *
+     * @param errorClass The class of the error to map
+     * @param mapper The error mapping function (Err(E) -> Ok(T))
+     * @param <E> The type of error to map.
+     *
+     * @return A result which is unchanged unless it's an Err where the error is an instance of E.
+     */
+    <E extends Throwable> Result<T> flatMapErrorOfType(Class<E> errorClass, Function<E, Result<T>> mapper);
 
-
-    public T orElseGet(Supplier<? extends T> supplier) {
-        if (isOk()) {return ok;}
-        return supplier.get();
-    }
-
-
-    public <X extends Throwable> T orElseThrow(Supplier<? extends X> exceptionSupplier) throws X {
-        if (isOk()) {
-            return ok;
-        }
-        throw exceptionSupplier.get();
-    }
-
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-
-        return obj instanceof Result<?> other
-                && Objects.equals(ok, other.ok)
-                && Objects.equals(error, other.error);
-    }
+    /**
+     * Returns the result from the supplier if this is the Err variant, otherwise returns itself.
+     *
+     * @param supplier A supplier of a result, which gets run if this is of the Err variant.
+     *
+     * @return This result if it's Ok, otherwise the result given by the supplier.
+     */
+    Result<T> or(Supplier<? extends Result<? extends T>> supplier);
 
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(ok, error);
-    }
+    /**
+     * Convert this result into an optional.
+     *
+     * @return An optional which holds the value if it exists.
+     */
+    Optional<T> toOptional();
 
-    @Override
-    public String toString() {
-        if (isOk()) {
-            return "Result["+ok+"]";
-        }
-        return "Result["+getError()+"]";
-    }
+    /**
+     * Gets the value from the result if it exists, otherwise returns the other value.
+     *
+     * @param other the value to return if the result is of the Err variant.
+     *
+     * @return either the value of the result if it exists or the other value.
+     */
+    T orElse(T other);
+
+
+    /**
+     * A match style statement for the result type, to allow matching over multiple errors.
+     *
+     * @param onOk         The match arm for okay results
+     * @param error        The match arm that gets run if the error doesn't match any of the others
+     * @param <U>          the return type
+     *
+     * @return a U given by the match arms
+     */
+    <U> U match(
+            Function<T, U> onOk,
+            Function<Throwable, U> error
+    );
+
+    /**
+     * Gets the value from the result if it exists, otherwise returns the result of the supplier.
+     *
+     * @param supplier the supplier to run if the result is of the Err variant.
+     *
+     * @return either the value of the result if it exists or the result of the supplier.
+     */
+    T orElseGet(Supplier<? extends T> supplier);
+
+    /**
+     * Make a result an error variant if it doesn't match the filter.
+     *
+     * @param predicate The predicate the value must match.
+     * @param error A supplier of an error for the Err case if it doesn't match the predicate.
+     *
+     * @return A result of Err variant if the value doesn't match the predicate.
+     */
+    Result<T> filter(Predicate<? super T> predicate, Supplier<? extends Throwable> error);
+
+    /**
+     * Throw a custom error if the result is of Err type, otherwise get the value.
+     *
+     * @param newError a supplier of the new error to throw if of the Err variant.
+     *
+     * @return The value of the Ok variant.
+     */
+    <E extends Throwable> T orElseThrow(Supplier<? extends E> newError) throws E;
+
+    /**
+     * Throw a custom error if the result is of Err type, otherwise get the value.
+     *
+     * @param newError a function that converts the stored error to a new error,
+     *                 while maintaining the stack trace.
+     *
+     * @return the value of the Ok variant.
+     */
+    <E extends Throwable> T orElseThrow(Function<? super Throwable, ? extends E> newError) throws E;
 }
+
+
