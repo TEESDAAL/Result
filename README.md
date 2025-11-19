@@ -5,18 +5,18 @@ At a high level, a result is very similar to an option, but instead of it being 
 ## Usage:
 This type is instantiated with the static `of` method: 
 ```java
-Result<Integer> result = Result.of(0);
-Result<String> anotherResult = Result.of("This is cool:)");
+Result<Integer, String> result = Result.ok(0);
+Result<String, Throwable> anotherResult = Result.ok("This is cool:)");
 ```
 You can also instantiate the error variant by passing a supplier of an error.
 ```java
-Result<Integer> evilResult = Result.of(()-> new IllegalArgumentException("An evil error"));
+Result<Integer, IllegalArgumentException> evilResult = Result.of(new IllegalArgumentException("An evil error"));
 ```
 And for some reason if you find a function that unwisely throws instead of returning a result. You can (partiallly) address these crimes using the `fromFunction` passing in a supplier that calls the method to capture the exception, and return a result.
 
 ```java
-Result<Integer> goodDivision = Result.fromFunction(()->divide(2, 4));
-Result<Integer> badDivision = Result.fromFunction(()->divide(4, 0));
+Result<Integer, Throwable> goodDivision = Result.fromFunction(()->divide(2, 4));
+Result<Integer, Throwable> badDivision = Result.fromFunction(()->divide(4, 0));
 assert goodDivision.isOk();
 assert badDivision.hasError();
 assert badDivision.getError() instanceof ArithmeticException;
