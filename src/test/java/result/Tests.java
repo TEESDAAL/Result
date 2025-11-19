@@ -3,6 +3,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
@@ -360,7 +361,8 @@ public class Tests {
                 Result.ok("Password is "+ADMIN_PASSWORD), "You tried to retrieve confidential information"
         );
         for (Result<String, Integer> response : GETResults.keySet()) {
-            assertEquals(GETResults.get(response), response.match(
+            assertEquals(GETResults.get(response), Result.match(
+                    response,
                     s -> s,
                     e -> "Unknown error code: " + e,
                     MatchArm.error(404, i -> i+": page not found"),
@@ -368,8 +370,8 @@ public class Tests {
                     MatchArm.err( i -> i >= 500 && i < 600, i -> i+": Server Error :("),
                     MatchArm.ok(s -> s.contains(ADMIN_PASSWORD), s -> "You tried to retrieve confidential information")
             ));
-
-            assertEquals(GETResults.get(response), response.match(
+            assertEquals(GETResults.get(response), Result.match(
+                    response,
                     res -> res.map(s -> s).orElseGet(i -> "Unknown error code: " + i),
                     MatchArm.err(i -> i == 404, i -> i+": page not found"),
                     MatchArm.err(i -> i == 400, i -> i+": Client Error"),
