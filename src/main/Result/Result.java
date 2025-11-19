@@ -1,3 +1,5 @@
+package main;
+
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
@@ -13,7 +15,7 @@ import java.util.function.Supplier;
  *
  * @author Alan Teesdale
  */
-public sealed interface Result<T> permits Err, Ok {
+public sealed interface Result<T, E> permits Err, Ok {
 
     /**
      * Convert a method into a result.
@@ -25,12 +27,12 @@ public sealed interface Result<T> permits Err, Ok {
      *     Which contains either the value or the error.
      *     (Immediately runs the provided function)
      */
-    static <T> Result<T> fromFunction(FallibleSupplier<T> function) {
+    static <T, E extends Throwable> Result<T, Throwable> fromFunction(FallibleSupplier<T> function) {
         Objects.requireNonNull(function);
         try {
-            return Result.of(function.get());
+            return Result.ok(function.get());
         } catch (Throwable e) {
-            return Result.of(() -> e);
+            return Result.err(e);
         }
     }
 
@@ -40,14 +42,14 @@ public sealed interface Result<T> permits Err, Ok {
      * @param runnable The runnable that gets converted into a result.
      * @return Convert the result of the runnable to the empty result, or an error if one occurred.
      */
-    static Result<Void> fromFunction(FallibleRunnable runnable) {
+    static Result<Void, Throwable> fromFunction(FallibleRunnable runnable) {
         Objects.requireNonNull(runnable);
         try {
             runnable.run();
             // needed to bypass the null checks from result.of
             return new Ok<>(null);
         } catch (Throwable e) {
-            return Result.of(() -> e);
+            return Result.err(e);
         }
     }
 
@@ -58,7 +60,7 @@ public sealed interface Result<T> permits Err, Ok {
      * @param <T>   The type of the value.
      * @return the ok result with a given value.
      */
-    static <T> Result<T> of(T value) {
+    static <T, E> Result<T, E> ok(T value) {
         return new Ok<>(Objects.requireNonNull(value));
     }
 
@@ -69,9 +71,8 @@ public sealed interface Result<T> permits Err, Ok {
      * @param <T> The type of the result.
      * @return The error result with a given supplier.
      */
-    static <T> Result<T> of(Supplier<? extends Throwable> error) {
-        Objects.requireNonNull(error);
-        return new Err<>(error);
+    static <T, E> Result<T, E> err(E error) {
+        return new Err<T, E>(Objects.requireNonNull(error));
     }
 
     /**
@@ -91,7 +92,7 @@ public sealed interface Result<T> permits Err, Ok {
      *
      * @throws NoSuchElementException if the result has no error - if it is the Ok variant.
      */
-    Throwable getError() throws NoSuchElementException;
+	 E getError() throws NoSuchElementException;
 
     /**
      * Returns if the result is of the Ok var.
@@ -134,7 +135,7 @@ public sealed interface Result<T> permits Err, Ok {
      * @param <U>    the type to map to
      * @return A result containing the mapped value.
      */
-    <U> Result<U> map(Function<? super T, ? extends U> mapper);
+    <U> Result<U, E> map(Function<? super T, ? extends U> mapper);
 
 
     /**
@@ -144,47 +145,44 @@ public sealed interface Result<T> permits Err, Ok {
      * @param <U>    The new type of the result
      * @return a new result provided by the mapper given the value of this result
      */
-    <U> Result<U> flatMap(Function<? super T, ? extends Result<? extends U>> mapper);
+    <U> Result<U, E> flatMap(Function<? super T, ? extends Result<? extends U, ? extends E>> mapper);
 
     /**
-     * Transform the Error to a different Error type.
+     * map the Error to a different Error type.
      *
      * @param mapper A function that takes the error to a different error type.
      *
      * @return A result which has the Err variant mapped to a different error.
      */
-    Result<T> transformError(Function<? super Throwable, ? extends Throwable> mapper);
+    <U> Result<T, U> mapError(Function<? super E, ? extends U> mapper);
 
     /**
-     * Transform the Error to a different Error type.
+     * flatMap the error variant a value
      *
-     * @param mapper A function that takes the error to a different error type.
-     *
-     * @return A result which has the Err variant mapped to a different error.
+     * @param mapper The error mapping function.
+
+     * @return A result of Ok(T) if the result is Ok or the mapper returns Ok(T)
      */
-    <E extends Throwable> Result<T> transformErrorOfType(Class<E> errorClass, Function<E, ? extends Throwable> mapper);
+	 <U> Result<T, U> flatMapError(Function<? super E, Result<? extends T, ? extends U>> mapper);
 
-    /**
+	/**
      * Map the error variant of a particular error to a value
      *
-     * @param errorClass The class of the error to map
+     * @param shouldMap Map the error if it matches the predicate
      * @param mapper The error mapping function (Err(E) -> Ok(T))
-     * @param <E> The type of error to map.
-     *
+
      * @return A result which is unchanged unless it's an Err where the error is an instance of E.
      */
-    <E extends Throwable> Result<T> mapErrorOfType(Class<E> errorClass, Function<E, T> mapper);
+	 Result<T, E> mapMatchingError(Predicate<? super E> shouldMap, Function<? super E, ? extends T> mapper);
 
     /**
-     * Map the error variant of a particular error to a value
-     *
-     * @param errorClass The class of the error to map
-     * @param mapper The error mapping function (Err(E) -> Ok(T))
-     * @param <E> The type of error to map.
-     *
-     * @return A result which is unchanged unless it's an Err where the error is an instance of E.
+     * flatMap the error matching the predicate.
+     * @param shouldMap Whether to map the error or not.
+     * @param mapper The mapper.
+
+     * @return The flatMapped error
      */
-    <E extends Throwable> Result<T> flatMapErrorOfType(Class<E> errorClass, Function<E, Result<T>> mapper);
+    Result<T, E> flatMapMatchingError(Predicate<? super E> shouldMap, Function<E, Result<? super T, ? extends E>> mapper);
 
     /**
      * Returns the result from the supplier if this is the Err variant, otherwise returns itself.
@@ -193,7 +191,7 @@ public sealed interface Result<T> permits Err, Ok {
      *
      * @return This result if it's Ok, otherwise the result given by the supplier.
      */
-    Result<T> or(Supplier<? extends Result<? extends T>> supplier);
+    Result<T, E> or(Supplier<? extends Result<? extends T, ? extends E>> supplier);
 
 
     /**
@@ -216,15 +214,31 @@ public sealed interface Result<T> permits Err, Ok {
     /**
      * A match style statement for the result type, to allow matching over multiple errors.
      *
-     * @param onOk         The match arm for okay results
-     * @param error        The match arm that gets run if the error doesn't match any of the others
+     * @param defaultArm   The catchall arm
+	 * @param matchArms    The MatchArms, can be {@link OkArm} or {@link ErrArm}
      * @param <U>          the return type
      *
      * @return a U given by the match arms
      */
     <U> U match(
-            Function<T, U> onOk,
-            Function<Throwable, U> error
+			Function<Result<T, E>, U> defaultArm,
+            @SuppressWarnings("unchecked") MatchArm<T, E, U>... matchArms
+    );
+	
+	/**
+     * A match style statement for the result type, to allow matching over multiple errors.
+     *
+     * @param defaultOk    The catchall ok match arm
+	 * @param defaultErr   The catchall err match arm
+	 * @param matchArms    The MatchArms, can be {@link OkArm} or {@link ErrArm}
+     * @param <U>          the return type
+     *
+     * @return a U given by the match arms
+     */
+    <U> U match(
+			Function<T, U> defaultOk,
+			Function<E, U> defaultErr,
+            @SuppressWarnings("unchecked") MatchArm<T, E, U>... matchArms
     );
 
     /**
@@ -237,14 +251,14 @@ public sealed interface Result<T> permits Err, Ok {
     T orElseGet(Supplier<? extends T> supplier);
 
     /**
-     * Make a result an error variant if it doesn't match the filter.
+     * Make an Ok an error variant if it doesn't match the filter.
      *
      * @param predicate The predicate the value must match.
-     * @param error A supplier of an error for the Err case if it doesn't match the predicate.
+     * @param toError A Function of an error for the Err case if it doesn't match the predicate.
      *
      * @return A result of Err variant if the value doesn't match the predicate.
      */
-    Result<T> filter(Predicate<? super T> predicate, Supplier<? extends Throwable> error);
+    Result<T, E> filter(Predicate<? super T> predicate, Function<? super T, ? super E> toError);
 
     /**
      * Throw a custom error if the result is of Err type, otherwise get the value.
@@ -253,7 +267,7 @@ public sealed interface Result<T> permits Err, Ok {
      *
      * @return The value of the Ok variant.
      */
-    <E extends Throwable> T orElseThrow(Supplier<? extends E> newError) throws E;
+    <Er extends Throwable> T orElseThrow(Supplier<? extends Er> newError) throws Er;
 
     /**
      * Throw a custom error if the result is of Err type, otherwise get the value.
@@ -263,7 +277,8 @@ public sealed interface Result<T> permits Err, Ok {
      *
      * @return the value of the Ok variant.
      */
-    <E extends Throwable> T orElseThrow(Function<? super Throwable, ? extends E> newError) throws E;
+    <Er extends Throwable> T orElseThrow(Function<E, Er> newError) throws Er;
+
 }
 
 
