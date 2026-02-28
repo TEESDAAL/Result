@@ -1,0 +1,9 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+Result,result,FallibleSupplier,0,9,0,0,0,3,0,1,0,1
+Result,result,FallibleRunnable,0,10,0,0,0,4,0,1,0,1
+Result,result,Result,0,44,0,2,0,12,0,6,0,5
+Result,result,OkArm,0,9,0,0,0,1,0,1,0,1
+Result,result,Ok,0,156,0,14,0,31,0,28,0,21
+Result,result,ErrArm,0,9,0,0,0,1,0,1,0,1
+Result,result,MatchArm,0,38,0,0,0,4,0,6,0,6
+Result,result,Err,0,169,0,16,0,32,0,29,0,21

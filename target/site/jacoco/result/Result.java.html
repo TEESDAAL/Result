@@ -1,4 +1,4 @@
-package main;
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Result.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Result</a> &gt; <a href="index.source.html" class="el_package">result</a> &gt; <span class="el_source">Result.java</span></div><h1>Result.java</h1><pre class="source lang-java linenums">package result;
 
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -11,28 +11,28 @@ import java.util.function.Supplier;
 /**
  * A result type containing either a value of type T or an error.
  *
- * @param <T> The type of the value.
+ * @param &lt;T&gt; The type of the value.
  *
  * @author Alan Teesdale
  */
-public sealed interface Result<T, E> permits Err, Ok {
+public sealed interface Result&lt;T, E&gt; permits Err, Ok {
 
     /**
      * Convert a method into a result.
      *
      * @param function The function to run.
-     * @param <T> The return type of the function.
+     * @param &lt;T&gt; The return type of the function.
      *
      * @return Convert the result of a function that could throw into a result.
      *     Which contains either the value or the error.
      *     (Immediately runs the provided function)
      */
-    static <T, E extends Throwable> Result<T, Throwable> fromFunction(FallibleSupplier<T> function) {
-        Objects.requireNonNull(function);
+    static &lt;T&gt; Result&lt;T, Throwable&gt; fromFunction(FallibleSupplier&lt;T&gt; function) {
+<span class="fc" id="L31">        Objects.requireNonNull(function);</span>
         try {
-            return Result.ok(function.get());
-        } catch (Throwable e) {
-            return Result.err(e);
+<span class="fc" id="L33">            return Result.ok(function.get());</span>
+<span class="fc" id="L34">        } catch (Throwable e) {</span>
+<span class="fc" id="L35">            return Result.err(e);</span>
         }
     }
 
@@ -42,14 +42,14 @@ public sealed interface Result<T, E> permits Err, Ok {
      * @param runnable The runnable that gets converted into a result.
      * @return Convert the result of the runnable to the empty result, or an error if one occurred.
      */
-    static Result<Void, Throwable> fromFunction(FallibleRunnable runnable) {
-        Objects.requireNonNull(runnable);
+    static Result&lt;Void, Throwable&gt; fromFunction(FallibleRunnable runnable) {
+<span class="fc" id="L46">        Objects.requireNonNull(runnable);</span>
         try {
-            runnable.run();
+<span class="fc" id="L48">            runnable.run();</span>
             // needed to bypass the null checks from result.of
-            return new Ok<>(null);
-        } catch (Throwable e) {
-            return Result.err(e);
+<span class="fc" id="L50">            return new Ok&lt;&gt;(null);</span>
+<span class="fc" id="L51">        } catch (Throwable e) {</span>
+<span class="fc" id="L52">            return Result.err(e);</span>
         }
     }
 
@@ -57,22 +57,22 @@ public sealed interface Result<T, E> permits Err, Ok {
      * Create an Ok result holding the value.
      *
      * @param value The value the result should hold.
-     * @param <T>   The type of the value.
+     * @param &lt;T&gt;   The type of the value.
      * @return the ok result with a given value.
      */
-    static <T, E> Result<T, E> ok(T value) {
-        return new Ok<>(Objects.requireNonNull(value));
+    static &lt;T, E&gt; Result&lt;T, E&gt; ok(T value) {
+<span class="fc" id="L64">        return new Ok&lt;&gt;(Objects.requireNonNull(value));</span>
     }
 
     /**
      * Create an error variant of the result.
      *
      * @param error A supplier of an error - the invalid result.
-     * @param <T> The type of the result.
+     * @param &lt;T&gt; The type of the result.
      * @return The error result with a given supplier.
      */
-    static <T, E> Result<T, E> err(E error) {
-        return new Err<T, E>(Objects.requireNonNull(error));
+    static &lt;T, E&gt; Result&lt;T, E&gt; err(E error) {
+<span class="fc" id="L75">        return new Err&lt;T, E&gt;(Objects.requireNonNull(error));</span>
     }
 
     /**
@@ -108,7 +108,7 @@ public sealed interface Result<T, E> permits Err, Ok {
      * @return true if the result is **not** okay, that is if it is the err variant.
      */
     default boolean hasError() {
-        return !isOk();
+<span class="fc bfc" id="L111" title="All 2 branches covered.">        return !isOk();</span>
     }
 
     /**
@@ -116,7 +116,7 @@ public sealed interface Result<T, E> permits Err, Ok {
      *
      * @param action the action to run on the result
      */
-    void ifOk(Consumer<? super T> action);
+    void ifOk(Consumer&lt;? super T&gt; action);
 
     /**
      * Run a consumer on the value if the result is okay, otherwise run the empty action.
@@ -124,7 +124,7 @@ public sealed interface Result<T, E> permits Err, Ok {
      * @param action      the action to run on the result
      * @param emptyAction the thing to run if there is no result
      */
-    void ifOkOrElse(Consumer<? super T> action, Runnable emptyAction);
+    void ifOkOrElse(Consumer&lt;? super T&gt; action, Runnable emptyAction);
 
 
     /**
@@ -132,20 +132,20 @@ public sealed interface Result<T, E> permits Err, Ok {
      * Keeps the error if the result is of error type.
      *
      * @param mapper map the value of the result to a different one if it exists
-     * @param <U>    the type to map to
+     * @param &lt;U&gt;    the type to map to
      * @return A result containing the mapped value.
      */
-    <U> Result<U, E> map(Function<? super T, ? extends U> mapper);
+    &lt;U&gt; Result&lt;U, E&gt; map(Function&lt;? super T, ? extends U&gt; mapper);
 
 
     /**
      * Works similarly to map, but flattens the result down, keeps the current error if one exists.
      *
      * @param mapper the function that maps the value to the new result
-     * @param <U>    The new type of the result
+     * @param &lt;U&gt;    The new type of the result
      * @return a new result provided by the mapper given the value of this result
      */
-    <U> Result<U, E> flatMap(Function<? super T, ? extends Result<? extends U, ? extends E>> mapper);
+    &lt;U&gt; Result&lt;U, E&gt; flatMap(Function&lt;? super T, ? extends Result&lt;? extends U, ? extends E&gt;&gt; mapper);
 
     /**
      * map the Error to a different Error type.
@@ -154,7 +154,7 @@ public sealed interface Result<T, E> permits Err, Ok {
      *
      * @return A result which has the Err variant mapped to a different error.
      */
-    <U> Result<T, U> mapError(Function<? super E, ? extends U> mapper);
+    &lt;U&gt; Result&lt;T, U&gt; mapError(Function&lt;? super E, ? extends U&gt; mapper);
 
     /**
      * flatMap the error variant a value
@@ -163,17 +163,17 @@ public sealed interface Result<T, E> permits Err, Ok {
 
      * @return A result of Ok(T) if the result is Ok or the mapper returns Ok(T)
      */
-	 <U> Result<T, U> flatMapError(Function<? super E, Result<? extends T, ? extends U>> mapper);
+	 &lt;U&gt; Result&lt;T, U&gt; flatMapError(Function&lt;? super E, Result&lt;? extends T, ? extends U&gt;&gt; mapper);
 
 	/**
      * Map the error variant of a particular error to a value
      *
      * @param shouldMap Map the error if it matches the predicate
-     * @param mapper The error mapping function (Err(E) -> Ok(T))
+     * @param mapper The error mapping function (Err(E) -&gt; Ok(T))
 
      * @return A result which is unchanged unless it's an Err where the error is an instance of E.
      */
-	 Result<T, E> mapMatchingError(Predicate<? super E> shouldMap, Function<? super E, ? extends T> mapper);
+	 Result&lt;T, E&gt; transformMatchingError(Predicate&lt;? super E&gt; shouldMap, Function&lt;? super E, ? extends T&gt; mapper);
 
     /**
      * flatMap the error matching the predicate.
@@ -182,7 +182,7 @@ public sealed interface Result<T, E> permits Err, Ok {
 
      * @return The flatMapped error
      */
-    Result<T, E> flatMapMatchingError(Predicate<? super E> shouldMap, Function<E, Result<? super T, ? extends E>> mapper);
+    Result&lt;T, E&gt; flatMapMatchingError(Predicate&lt;? super E&gt; shouldMap, Function&lt;E, Result&lt;? super T, ? extends E&gt;&gt; mapper);
 
     /**
      * Returns the result from the supplier if this is the Err variant, otherwise returns itself.
@@ -191,7 +191,7 @@ public sealed interface Result<T, E> permits Err, Ok {
      *
      * @return This result if it's Ok, otherwise the result given by the supplier.
      */
-    Result<T, E> or(Supplier<? extends Result<? extends T, ? extends E>> supplier);
+    Result&lt;T, E&gt; or(Supplier&lt;? extends Result&lt;? extends T, ? extends E&gt;&gt; supplier);
 
 
     /**
@@ -199,7 +199,7 @@ public sealed interface Result<T, E> permits Err, Ok {
      *
      * @return An optional which holds the value if it exists.
      */
-    Optional<T> toOptional();
+    Optional&lt;T&gt; toOptional();
 
     /**
      * Gets the value from the result if it exists, otherwise returns the other value.
@@ -216,13 +216,13 @@ public sealed interface Result<T, E> permits Err, Ok {
      *
      * @param defaultArm   The catchall arm
 	 * @param matchArms    The MatchArms, can be {@link OkArm} or {@link ErrArm}
-     * @param <U>          the return type
+     * @param &lt;U&gt;          the return type
      *
      * @return a U given by the match arms
      */
-    <U> U match(
-			Function<Result<T, E>, U> defaultArm,
-            @SuppressWarnings("unchecked") MatchArm<T, E, U>... matchArms
+    &lt;U&gt; U match(
+			Function&lt;Result&lt;T, E&gt;, U&gt; defaultArm,
+            @SuppressWarnings(&quot;unchecked&quot;) MatchArm&lt;T, E, U&gt;... matchArms
     );
 	
 	/**
@@ -231,14 +231,15 @@ public sealed interface Result<T, E> permits Err, Ok {
      * @param defaultOk    The catchall ok match arm
 	 * @param defaultErr   The catchall err match arm
 	 * @param matchArms    The MatchArms, can be {@link OkArm} or {@link ErrArm}
-     * @param <U>          the return type
+     * @param &lt;U&gt;          the return type
      *
      * @return a U given by the match arms
      */
-    <U> U match(
-			Function<T, U> defaultOk,
-			Function<E, U> defaultErr,
-            @SuppressWarnings("unchecked") MatchArm<T, E, U>... matchArms
+    @SuppressWarnings({&quot;varargs&quot;, &quot;unchecked&quot;})
+    &lt;U&gt; U match(
+			Function&lt;T, U&gt; defaultOk,
+			Function&lt;E, U&gt; defaultErr,
+            MatchArm&lt;T, E, U&gt;... matchArms
     );
 
     /**
@@ -248,7 +249,7 @@ public sealed interface Result<T, E> permits Err, Ok {
      *
      * @return either the value of the result if it exists or the result of the supplier.
      */
-    T orElseGet(Supplier<? extends T> supplier);
+    T orElseGet(Function&lt;? super E, ? extends T&gt; supplier);
 
     /**
      * Make an Ok an error variant if it doesn't match the filter.
@@ -258,7 +259,7 @@ public sealed interface Result<T, E> permits Err, Ok {
      *
      * @return A result of Err variant if the value doesn't match the predicate.
      */
-    Result<T, E> filter(Predicate<? super T> predicate, Function<? super T, ? super E> toError);
+    Result&lt;T, E&gt; filter(Predicate&lt;? super T&gt; predicate, Function&lt;? super T, ? super E&gt; toError);
 
     /**
      * Throw a custom error if the result is of Err type, otherwise get the value.
@@ -267,7 +268,7 @@ public sealed interface Result<T, E> permits Err, Ok {
      *
      * @return The value of the Ok variant.
      */
-    <Er extends Throwable> T orElseThrow(Supplier<? extends Er> newError) throws Er;
+    &lt;Er extends Throwable&gt; T orElseThrow(Supplier&lt;? extends Er&gt; newError) throws Er;
 
     /**
      * Throw a custom error if the result is of Err type, otherwise get the value.
@@ -277,8 +278,9 @@ public sealed interface Result<T, E> permits Err, Ok {
      *
      * @return the value of the Ok variant.
      */
-    <Er extends Throwable> T orElseThrow(Function<E, Er> newError) throws Er;
+    &lt;Er extends Throwable&gt; T orElseThrow(Function&lt;E, Er&gt; newError) throws Er;
 
 }
 
 
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Err.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Result</a> &gt; <a href="index.source.html" class="el_package">result</a> &gt; <span class="el_source">Err.java</span></div><h1>Err.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">package result;</span>
+
+import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+
+/**
+ * The Err variant of the result.
+ *
+ * @param error a supplier of the error this variant holds.
+ * @param &lt;T&gt; The type of result.
+ *
+ * @author Alan Teesdale (300652164)
+ */
+record Err&lt;T, E&gt;(E error) implements Result&lt;T, E&gt; {
+    @Override
+    public T get() throws RuntimeException {
+<span class="fc" id="L20">        throw new RuntimeException(&quot;Result is error variant with value: &quot; + error);</span>
+    }
+
+    @Override
+    public E getError() {
+<span class="fc" id="L25">        return error;</span>
+    }
+
+    @Override
+    public boolean isOk() {
+<span class="fc" id="L30">        return false;</span>
+    }
+
+    @Override
+    public void ifOk(Consumer&lt;? super T&gt; action) {
+<span class="fc" id="L35">    }</span>
+
+    @Override
+    public void ifOkOrElse(Consumer&lt;? super T&gt; action, Runnable emptyAction) {
+<span class="fc" id="L39">        emptyAction.run();</span>
+<span class="fc" id="L40">    }</span>
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    public &lt;U&gt; Result &lt;U, E&gt; map(Function&lt;? super T, ? extends U&gt; mapper) {
+<span class="fc" id="L45">        return (Result&lt;U, E&gt;) this;</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    public &lt;U&gt; Result&lt;U, E&gt; flatMap(Function&lt;? super T, ? extends Result&lt;? extends U, ? extends E&gt;&gt; mapper) {
+<span class="fc" id="L51">        return (Result&lt;U, E&gt;) this;</span>
+    }
+
+    @Override
+    public &lt;U&gt; Result&lt;T, U&gt; mapError(Function&lt;? super E, ? extends U&gt; mapper) {
+<span class="fc" id="L56">        return new Err&lt;&gt;(mapper.apply(this.error));</span>
+    }
+
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    @Override
+    public Result&lt;T, E&gt; or(Supplier&lt;? extends Result&lt;? extends T, ?extends E&gt;&gt; supplier) {
+<span class="fc" id="L63">        return (Result&lt;T, E&gt;) supplier.get();</span>
+    }
+
+    @Override
+    public Optional&lt;T&gt; toOptional() {
+<span class="fc" id="L68">        return Optional.empty();</span>
+    }
+
+    @Override
+    public T orElse(T other) {
+<span class="fc" id="L73">        return other;</span>
+    }
+
+    @Override
+    @SafeVarargs
+    public final &lt;U&gt; U match(
+			Function&lt;Result&lt;T, E&gt;, U&gt; defaultArm,
+            MatchArm&lt;T, E, U&gt;... matchArms
+    ) {
+<span class="fc bfc" id="L82" title="All 2 branches covered.">		for (MatchArm&lt;T, E, U&gt; arm : matchArms) {</span>
+<span class="fc bfc" id="L83" title="All 4 branches covered.">			if (arm instanceof ErrArm&lt;T, E, U&gt; e &amp;&amp; e.shouldMap().test(this.error)) {</span>
+<span class="fc" id="L84">				return e.mapper().apply(this.error);</span>
+			}
+		}
+<span class="fc" id="L87">		return defaultArm.apply(this);</span>
+	}
+
+	@Override
+    @SafeVarargs
+    public final &lt;U&gt; U match(
+			Function&lt;T, U&gt; defaultOk,
+			Function&lt;E, U&gt; defaultErr,
+            MatchArm&lt;T, E, U&gt;... matchArms
+    ) {
+<span class="fc bfc" id="L97" title="All 2 branches covered.">		for (MatchArm&lt;T, E, U&gt; arm : matchArms) {</span>
+<span class="fc bfc" id="L98" title="All 4 branches covered.">			if (arm instanceof ErrArm&lt;T, E, U&gt; e &amp;&amp; e.shouldMap().test(this.error)) {</span>
+<span class="fc" id="L99">				return e.mapper().apply(this.error);</span>
+			}
+		}
+<span class="fc" id="L102">		return defaultErr.apply(this.error);</span>
+	}
+
+    @Override
+    public T orElseGet(Function&lt;? super E, ? extends T&gt; supplier) {
+<span class="fc" id="L107">        return supplier.apply(this.error);</span>
+    }
+
+    @Override
+    public Result&lt;T, E&gt; filter(Predicate&lt;? super T&gt; predicate, Function&lt;? super T, ? super E&gt; toError) {
+<span class="fc" id="L112">        return this;</span>
+    }
+
+    @Override
+    public &lt;Er extends Throwable&gt; T orElseThrow(Supplier&lt;? extends Er&gt; newError) throws Er {
+<span class="fc" id="L117">		throw newError.get();</span>
+	}
+
+    @Override
+    public &lt;Er extends Throwable&gt; T orElseThrow(Function&lt;E, Er&gt; newError) throws Er {
+<span class="fc" id="L122">        throw newError.apply(error);</span>
+    }
+
+	@Override
+	public Result&lt;T, E&gt; transformMatchingError(Predicate&lt;? super E&gt; shouldMap, Function&lt;? super E, ? extends T&gt; mapper) {
+<span class="fc bfc" id="L127" title="All 2 branches covered.">		if (shouldMap.test(this.error)) {</span>
+<span class="fc" id="L128">			return Result.ok(mapper.apply(this.error));</span>
+		}
+<span class="fc" id="L130">		return this;</span>
+	}
+
+    @Override
+    public Result&lt;T, E&gt; flatMapMatchingError(Predicate&lt;? super E&gt; shouldMap, Function&lt;E, Result&lt;? super T, ? extends E&gt;&gt; mapper) {
+<span class="fc bfc" id="L135" title="All 2 branches covered.">        if (shouldMap.test(this.error)) {</span>
+<span class="fc" id="L136">			return (Result&lt;T, E&gt;) mapper.apply(this.error);</span>
+		}
+<span class="fc" id="L138">		return this;</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+	@Override
+	public &lt;U&gt; Result&lt;T, U&gt; flatMapError(Function&lt;? super E, Result&lt;? extends T, ? extends U&gt;&gt; mapper) {
+<span class="fc" id="L144">		return (Result&lt;T, U&gt;) mapper.apply(this.error);</span>
+	}
+
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>
