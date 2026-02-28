@@ -11,7 +11,7 @@ public class ExampleTests {
 	public void instantiationExample1() {
 		Result<Integer, String> result = Result.ok(0);
 		Result<String, Throwable> anotherResult = Result.ok("This is cool:)");
-		Result<Integer, IllegalArgumentException> evilResult = err(new IllegalArgumentException("An evil error"));
+		Result<Integer, IllegalArgumentException> evilResult = Result.err(new IllegalArgumentException("An evil error"));
 		assertEquals(0, result.get());
 		assertEquals("This is cool:)", anotherResult.get());
 		assertEquals("An evil error", evilResult.getError().getMessage());
