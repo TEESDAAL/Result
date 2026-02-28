@@ -258,7 +258,8 @@ public class Tests {
 
         assert goodDivision.isOk();
         assert badDivision.hasError();
-        assert badDivision.getError().getCause() instanceof ArithmeticException;
+
+        assert badDivision.getError() instanceof ArithmeticException;
     }
 
     @Test
