@@ -1,4 +1,7 @@
 Result.iml
 out/*
-/.idea/*
+.idea/*
 target/
+.classpath
+.project
+.settings
